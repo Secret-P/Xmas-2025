@@ -170,6 +170,7 @@ function renderMyItems(snapshot) {
     card.className = "item-card";
     card.dataset.itemId = id;
 
+    // Header
     const header = document.createElement("div");
     header.className = "item-header";
 
@@ -210,11 +211,35 @@ function renderMyItems(snapshot) {
     footerRight.appendChild(btnDelete);
     header.appendChild(footerRight);
 
+    // Body – show notes clearly
     const body = document.createElement("div");
     body.className = "item-body";
-    const notes = data.notes || "";
-    body.textContent = notes || "No private notes";
 
+    const notes = (data.notes || "").trim();
+    if (notes) {
+      const label = document.createElement("div");
+      label.style.fontSize = "0.75rem";
+      label.style.color = "#9ca3af";
+      label.style.marginBottom = "2px";
+      label.textContent = "Your notes:";
+
+      const notesText = document.createElement("div");
+      notesText.style.whiteSpace = "pre-wrap"; // handle multi-line notes
+      notesText.style.fontSize = "0.8rem";
+      notesText.style.color = "#e5e7eb";
+      notesText.textContent = notes;
+
+      body.appendChild(label);
+      body.appendChild(notesText);
+    } else {
+      const noNotes = document.createElement("div");
+      noNotes.style.fontSize = "0.75rem";
+      noNotes.style.color = "#9ca3af";
+      noNotes.textContent = "No private notes.";
+      body.appendChild(noNotes);
+    }
+
+    // Footer – link
     const footer = document.createElement("div");
     footer.className = "item-footer";
 
