@@ -271,7 +271,6 @@
       font-size: 0.95rem;
     }
 
-    /* Layout for content: single column full width */
     #app-shell {
       display: none;
       flex-direction: column;
@@ -363,7 +362,6 @@
       margin-bottom: 4px;
     }
 
-    /* Extra distinction on sections */
     .section-form {
       background: radial-gradient(circle at top left, rgba(15,23,42,0.9), rgba(15,23,42,1));
       border-radius: var(--radius-lg);
@@ -399,7 +397,6 @@
       position: relative;
     }
 
-    /* purchased card look */
     .item-card.purchased {
       border-color: var(--accent-strong);
       background: radial-gradient(
@@ -554,10 +551,6 @@
       display: none !important;
     }
 
-    .collapsed {
-      display: none !important;
-    }
-
     .spacer {
       flex: 1;
     }
@@ -575,14 +568,27 @@
       gap: 8px;
     }
 
+    /* details/summary styling for the collapsible section */
+    details {
+      border-radius: 10px;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      outline: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
     /* ---------- Mobile tweaks (phone portrait) ---------- */
     @media (max-width: 720px) {
-      /* Tighten overall margins */
       #root {
         margin: 12px;
       }
 
-      /* Stack header content vertically */
       header.app-header {
         flex-direction: column;
         align-items: flex-start;
@@ -596,7 +602,6 @@
         flex-wrap: wrap;
       }
 
-      /* FAMILY PANEL: stack sidebar above content */
       #panel-family .row {
         flex-direction: column;
         align-items: stretch !important;
@@ -612,17 +617,14 @@
         width: 100%;
       }
 
-      /* Make the recipients list a shorter scrollable strip */
       .family-list {
         max-height: 180px;
       }
 
-      /* Slightly reduce list heights */
       .list {
         max-height: 360px;
       }
 
-      /* Slightly bigger tap targets */
       .btn {
         padding-top: 9px;
         padding-bottom: 9px;
@@ -809,47 +811,46 @@
                 </div>
               </div>
 
-              <!-- Add item for recipient (collapsible) -->
-              <div class="section section-form" id="other-item-section">
-                <div class="row-between" style="margin-bottom:6px;">
-                  <div class="section-title">Add an item to their list</div>
-                  <button type="button"
-                          class="btn btn-outline btn-small"
-                          id="toggle-other-item-section">
-                    Add item
-                  </button>
-                </div>
+              <!-- Add item for recipient (collapsible via <details>) -->
+              <div class="section section-form">
+                <details id="other-item-details">
+                  <summary class="row-between">
+                    <div class="section-title">Add an item to their list</div>
+                    <button type="button" class="btn btn-outline btn-small" onclick="this.closest('details').open = !this.closest('details').open;">
+                      <span class="summary-label">Add item</span>
+                    </button>
+                  </summary>
+                  <div style="margin-top:8px;">
+                    <form id="other-item-form">
+                      <input type="hidden" id="other-item-recipient-id" value="" />
 
-                <div id="other-item-section-body" class="collapsed">
-                  <form id="other-item-form">
-                    <input type="hidden" id="other-item-recipient-id" value="" />
+                      <div class="form-group">
+                        <label for="other-item-name">Item name</label>
+                        <input id="other-item-name" class="input" type="text" placeholder="e.g. Lego Starfighter" required />
+                      </div>
 
-                    <div class="form-group">
-                      <label for="other-item-name">Item name</label>
-                      <input id="other-item-name" class="input" type="text" placeholder="e.g. Lego Starfighter" required />
-                    </div>
+                      <div class="form-group">
+                        <label for="other-item-link">Link (optional)</label>
+                        <input id="other-item-link" class="input" type="url" placeholder="https://example.com/product" />
+                      </div>
 
-                    <div class="form-group">
-                      <label for="other-item-link">Link (optional)</label>
-                      <input id="other-item-link" class="input" type="url" placeholder="https://example.com/product" />
-                    </div>
+                      <div class="form-group">
+                        <label for="other-item-note">Optional giver note (only visible to other givers)</label>
+                        <textarea id="other-item-note" class="textarea" placeholder="e.g. Already ordered, arrives 12/20."></textarea>
+                      </div>
 
-                    <div class="form-group">
-                      <label for="other-item-note">Optional giver note (only visible to other givers)</label>
-                      <textarea id="other-item-note" class="textarea" placeholder="e.g. Already ordered, arrives 12/20."></textarea>
-                    </div>
-
-                    <div class="row-between">
-                      <span class="helper-text">
-                        The recipient will not see this item or any giver notes.
-                      </span>
-                      <button type="submit" class="btn btn-primary btn-small" id="btn-add-other-item" disabled>
-                        <span>🎅</span>
-                        <span>Add to their list</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                      <div class="row-between">
+                        <span class="helper-text">
+                          The recipient will not see this item or any giver notes.
+                        </span>
+                        <button type="submit" class="btn btn-primary btn-small" id="btn-add-other-item" disabled>
+                          <span>🎅</span>
+                          <span>Add to their list</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </details>
               </div>
 
               <!-- Items for recipient -->
