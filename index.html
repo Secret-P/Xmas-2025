@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Family Gift Lists</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #111827;
+      --bg-elevated-soft: #020617;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.15);
+      --accent-strong: #16a34a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #ef4444;
+      --radius-lg: 12px;
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 35px rgba(0, 0, 0, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #000 100%);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    #root {
+      width: 100%;
+      max-width: 1200px;
+      margin: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: linear-gradient(135deg, rgba(15,23,42,0.95), rgba(2,6,23,0.98));
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(148,163,184,0.15);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 20px;
+    }
+
+    header.app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .app-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .app-title h1 {
+      font-size: 1.4rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-title span.logo-emoji {
+      font-size: 1.6rem;
+    }
+
+    .app-title p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .user-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148,163,184,0.35);
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #020617;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .user-name-email {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .user-name-email span:first-child {
+      font-size: 0.85rem;
+    }
+
+    .user-name-email span:last-child {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, background 0.12s ease-out;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #022c22;
+      box-shadow: 0 10px 20px rgba(34,197,94,0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(34,197,94,0.5);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(148,163,184,0.3);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      background: rgba(148,163,184,0.06);
+      transform: translateY(-1px);
+    }
+
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+    }
+
+    /* Disabled buttons */
+    .btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn[disabled]:hover {
+      background: inherit;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Auth screen */
+    #auth-screen {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    #auth-card {
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin: 6px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.08);
+      border: 1px solid rgba(148,163,184,0.2);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: inline-flex;
+      padding: 3px;
+      background: rgba(15,23,42,0.9);
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.25);
+    }
+
+    .tab {
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.12s ease-out, color 0.12s ease-out;
+    }
+
+    .tab.active {
+      background: rgba(34,197,94,0.12);
+      color: var(--accent);
+    }
+
+    .tab span.icon {
+      font-size: 0.95rem;
+    }
+
+    /* Layout for content: single column full width */
+    #app-shell {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #content {
+      display: block;
+    }
+
+    /* Panels */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-header p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.25);
+      color: var(--muted);
+    }
+
+    /* Forms & Inputs */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .input, .textarea, .select {
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.9);
+      padding: 7px 9px;
+      color: var(--text);
+      font-size: 0.8rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .input:focus, .textarea:focus, .select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(34,197,94,0.3);
+    }
+
+    .textarea {
+      min-height: 56px;
+      resize: vertical;
+    }
+
+    .section {
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    /* Extra distinction on sections */
+    .section-form {
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), rgba(15,23,42,1));
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(148,163,184,0.25);
+      padding: 10px 12px 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-list {
+      border-top: 1px dashed rgba(148,163,184,0.35);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
+    /* Lists */
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 410px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .item-card {
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(31,41,55,0.9);
+      background: radial-gradient(circle at top left, rgba(15,23,42,1), rgba(15,23,42,0.95));
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+    }
+
+    /* purchased card look */
+    .item-card.purchased {
+      border-color: var(--accent-strong);
+      background: radial-gradient(
+        circle at top left,
+        rgba(22,163,74,0.25),
+        rgba(15,23,42,0.98)
+      );
+    }
+
+    .item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .item-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .item-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .item-tags {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.25);
+      color: var(--muted);
+      background: rgba(15,23,42,0.9);
+    }
+
+    .tag-purchased {
+      border-color: rgba(34,197,94,0.9);
+      color: #bbf7d0;
+      background: rgba(34,197,94,0.18);
+      font-weight: 600;
+    }
+
+    .item-body {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .item-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .item-footer-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .item-footer-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .link {
+      color: #60a5fa;
+      font-size: 0.78rem;
+      text-decoration: none;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .helper-text {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Family sidebar */
+    .family-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 410px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .family-member {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(31,41,55,0.95);
+      background: rgba(15,23,42,0.95);
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.12s ease-out, border-color 0.12s ease-out;
+    }
+
+    .family-member-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .family-member.active {
+      border-color: rgba(34,197,94,0.7);
+      background: radial-gradient(circle at left, rgba(34,197,94,0.15), rgba(15,23,42,0.95));
+    }
+
+    .family-member span.name {
+      font-size: 0.85rem;
+    }
+
+    .family-member span.count {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .dot-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.7);
+    }
+
+    .dot-indicator.has-purchased {
+      background: var(--accent);
+    }
+
+    /* Simple utility */
+    .hidden {
+      display: none !important;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .row-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+<div id="root">
+  <!-- AUTH SCREEN -->
+  <section id="auth-screen">
+    <div id="auth-card" class="card">
+      <div class="app-title" style="text-align:left;">
+        <h1>
+          <span class="logo-emoji">🎄</span>
+          <span>Gift Lists</span>
+        </h1>
+        <p>Private wishlists with secret giver notes for the whole family.</p>
+      </div>
+
+      <div style="margin-top: 14px; margin-bottom: 12px;">
+        <span class="pill">
+          <span>🔒</span>
+          <span>Google sign-in only · No guests</span>
+        </span>
+      </div>
+
+      <p class="subtitle">
+        Sign in with your Google account to manage your own list and see everyone else’s.
+        Recipients never see giver notes or surprise items.
+      </p>
+
+      <div style="margin-top: 18px;">
+        <button id="btn-google-login" class="btn btn-primary">
+          <span>🔑</span>
+          <span>Sign in with Google</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP SHELL -->
+  <section id="app-shell">
+    <header class="app-header card">
+      <div class="app-title">
+        <h1>
+          <span class="logo-emoji">🎁</span>
+          <span>Family Gift Lists</span>
+        </h1>
+        <p>See your own wishlist · Secretly coordinate gifts for everyone else.</p>
+      </div>
+
+      <div class="user-area">
+        <div class="tabs" aria-label="View mode">
+          <button class="tab active" id="tab-my-list" data-tab="my-list">
+            <span class="icon">📝</span>
+            <span>My List</span>
+          </button>
+          <button class="tab" id="tab-family" data-tab="family">
+            <span class="icon">👨‍👩‍👧‍👦</span>
+            <span>Family Lists</span>
+          </button>
+        </div>
+
+        <div class="user-chip" id="user-chip">
+          <div class="user-avatar" id="user-avatar">
+            <!-- user initial or image -->
+          </div>
+          <div class="user-name-email">
+            <span id="user-display-name">Signed in user</span>
+            <span id="user-email">email@example.com</span>
+          </div>
+        </div>
+
+        <button id="btn-logout" class="btn btn-outline btn-small">
+          <span>⏏</span>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div id="content">
+        <!-- MY LIST -->
+        <section id="panel-my-list" class="card">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <span>📝 My List</span>
+              </h2>
+              <p>Items you’ve added for yourself. You never see giver notes or surprise gifts here.</p>
+            </div>
+            <div class="chip">
+              <span>🙋‍♂️</span>
+              <span id="my-list-owner-label">You</span>
+            </div>
+          </div>
+
+          <div class="section section-form">
+            <div class="section-title">Add or Edit Item</div>
+            <form id="my-item-form">
+              <input type="hidden" id="my-item-id" value="" />
+
+              <div class="form-group">
+                <label for="my-item-name">Item name</label>
+                <input id="my-item-name" class="input" type="text" placeholder="e.g. Noise-cancelling headphones" required />
+              </div>
+
+              <div class="form-group">
+                <label for="my-item-link">Link (optional)</label>
+                <input id="my-item-link" class="input" type="url" placeholder="https://example.com/product" />
+              </div>
+
+              <div class="form-group">
+                <label for="my-item-notes">Notes (only you can see these)</label>
+                <textarea id="my-item-notes" class="textarea" placeholder="Size, color, variants you prefer, etc."></textarea>
+              </div>
+
+              <div class="row-between">
+                <span class="helper-text">Only items you create for yourself appear here.</span>
+                <div class="row">
+                  <button type="button" id="btn-my-item-reset" class="btn btn-outline btn-small">Clear</button>
+                  <button type="submit" class="btn btn-primary btn-small">
+                    <span>➕</span>
+                    <span>Save item</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="section section-list">
+            <div class="section-title">My visible items</div>
+            <div id="my-items-list" class="list">
+              <!-- Populated via JS -->
+            </div>
+            <p class="helper-text" id="my-items-empty">
+              You haven’t added anything yet. Start by adding an item above.
+            </p>
+          </div>
+        </section>
+
+        <!-- FAMILY LISTS -->
+        <section id="panel-family" class="card hidden">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <span>👨‍👩‍👧‍👦 Family Lists</span>
+              </h2>
+              <p>View everyone else’s lists, coordinate purchases, and add surprise gifts for them.</p>
+            </div>
+            <div class="chip">
+              <span>🕵️</span>
+              <span>Recipients never see giver notes or surprise items</span>
+            </div>
+          </div>
+
+          <div class="row" style="align-items:flex-start; gap:12px;">
+            <!-- Family sidebar -->
+            <div style="flex: 0 0 230px; max-width: 260px;">
+              <div class="section-title">Recipients</div>
+              <div id="family-list" class="family-list">
+                <!-- Populated via JS with users (excluding current) -->
+              </div>
+            </div>
+
+            <!-- Selected recipient content -->
+            <div style="flex: 1 1 auto; min-width: 0;">
+              <div class="row-between" style="margin-bottom: 6px;">
+                <div>
+                  <div class="section-title">Selected list</div>
+                  <div class="row" style="gap:6px;">
+                    <span id="selected-recipient-name" style="font-size:0.95rem; font-weight:500;">Choose someone</span>
+                    <span id="selected-recipient-email" style="font-size:0.75rem; color:var(--muted);"></span>
+                  </div>
+                  <p class="helper-text">
+                    All items for this person are visible here, including surprise items you or others have added.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Add item for recipient -->
+              <div class="section section-form">
+                <div class="section-title">Add an item to their list</div>
+                <form id="other-item-form">
+                  <input type="hidden" id="other-item-recipient-id" value="" />
+
+                  <div class="form-group">
+                    <label for="other-item-name">Item name</label>
+                    <input id="other-item-name" class="input" type="text" placeholder="e.g. Lego Starfighter" required />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="other-item-link">Link (optional)</label>
+                    <input id="other-item-link" class="input" type="url" placeholder="https://example.com/product" />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="other-item-note">Optional giver note (only visible to other givers)</label>
+                    <textarea id="other-item-note" class="textarea" placeholder="e.g. Already ordered, arrives 12/20."></textarea>
+                  </div>
+
+                  <div class="row-between">
+                    <span class="helper-text">
+                      The recipient will not see this item or any giver notes.
+                    </span>
+                    <button type="submit" class="btn btn-primary btn-small" id="btn-add-other-item" disabled>
+                      <span>🎅</span>
+                      <span>Add to their list</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Items for recipient -->
+              <div class="section section-list">
+                <div class="section-title">Items on this list</div>
+                <div id="other-items-list" class="list">
+                  <!-- Populated via JS -->
+                </div>
+                <p class="helper-text" id="other-items-empty">
+                  Select a recipient to view their list and mark items as purchased.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </section>
+</div>
+
+<!-- Scripts: Firebase + app logic -->
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="auth.js"></script>
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
