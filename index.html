@@ -570,6 +570,65 @@
       justify-content: space-between;
       gap: 8px;
     }
+
+    /* ---------- Mobile tweaks (phone portrait) ---------- */
+    @media (max-width: 720px) {
+      /* Tighten overall margins */
+      #root {
+        margin: 12px;
+      }
+
+      /* Stack header content vertically */
+      header.app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .user-area {
+        width: 100%;
+        justify-content: space-between;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      /* FAMILY PANEL: stack sidebar above content */
+      #panel-family .row {
+        flex-direction: column;
+        align-items: stretch !important;
+      }
+
+      #panel-family .row > div:first-child {
+        flex: 0 0 auto !important;
+        max-width: 100% !important;
+      }
+
+      #panel-family .row > div:last-child {
+        flex: 1 1 auto;
+        width: 100%;
+      }
+
+      /* Make the recipients list a shorter scrollable strip */
+      .family-list {
+        max-height: 180px;
+      }
+
+      /* Slightly reduce list heights */
+      .list {
+        max-height: 360px;
+      }
+
+      /* Slightly bigger tap targets */
+      .btn {
+        padding-top: 9px;
+        padding-bottom: 9px;
+      }
+
+      .btn-small {
+        padding-top: 7px;
+        padding-bottom: 7px;
+      }
+    }
   </style>
 </head>
 <body>
