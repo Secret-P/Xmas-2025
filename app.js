@@ -48,6 +48,8 @@ const otherItemNoteInput = document.getElementById("other-item-note");
 const otherItemsList = document.getElementById("other-items-list");
 const otherItemsEmpty = document.getElementById("other-items-empty");
 const btnAddOtherItem = document.getElementById("btn-add-other-item");
+const otherItemSectionBody = document.getElementById("other-item-section-body");
+const btnToggleOtherItemSection = document.getElementById("toggle-other-item-section");
 
 // ---------- State ----------
 let currentUser = null;
@@ -58,6 +60,8 @@ let unsubscribeRecipientItems = null;
 
 let currentRecipientId = null;
 let usersMap = new Map(); // uid -> {displayName, email}
+
+let otherItemSectionCollapsed = true;
 
 // ---------- Tabs ----------
 function setActiveTab(tab) {
@@ -76,6 +80,30 @@ function setActiveTab(tab) {
 
 tabMyList.addEventListener("click", () => setActiveTab("my-list"));
 tabFamily.addEventListener("click", () => setActiveTab("family"));
+
+// ---------- Collapsible "Add item to their list" section ----------
+function setOtherItemSectionCollapsed(collapsed) {
+  otherItemSectionCollapsed = collapsed;
+
+  if (!otherItemSectionBody || !btnToggleOtherItemSection) return;
+
+  if (collapsed) {
+    otherItemSectionBody.classList.add("collapsed");
+    btnToggleOtherItemSection.textContent = "Add item";
+  } else {
+    otherItemSectionBody.classList.remove("collapsed");
+    btnToggleOtherItemSection.textContent = "Hide form";
+  }
+}
+
+if (btnToggleOtherItemSection) {
+  btnToggleOtherItemSection.addEventListener("click", () => {
+    setOtherItemSectionCollapsed(!otherItemSectionCollapsed);
+  });
+}
+
+// Start collapsed by default
+setOtherItemSectionCollapsed(true);
 
 // ---------- Auth-driven listeners ----------
 onAuthStateChanged(auth, (user) => {
@@ -120,6 +148,12 @@ function clearUI() {
   if (btnAddOtherItem) {
     btnAddOtherItem.disabled = true;
   }
+
+  // Reset the collapsible section to collapsed
+  setOtherItemSectionCollapsed(true);
+  if (otherItemNameInput) otherItemNameInput.value = "";
+  if (otherItemLinkInput) otherItemLinkInput.value = "";
+  if (otherItemNoteInput) otherItemNoteInput.value = "";
 }
 
 // ---------- My List ----------
@@ -400,6 +434,12 @@ function selectRecipient(uid) {
     btnAddOtherItem.disabled = false;
   }
 
+  // Reset collapsible form each time you switch recipients
+  setOtherItemSectionCollapsed(true);
+  if (otherItemNameInput) otherItemNameInput.value = "";
+  if (otherItemLinkInput) otherItemLinkInput.value = "";
+  if (otherItemNoteInput) otherItemNoteInput.value = "";
+
   initRecipientItemsListener(uid);
 }
 
@@ -668,6 +708,7 @@ otherItemForm.addEventListener("submit", async (e) => {
       );
     }
 
+    // Clear form but keep it expanded if they just added something
     otherItemNameInput.value = "";
     otherItemLinkInput.value = "";
     otherItemNoteInput.value = "";
