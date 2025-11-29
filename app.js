@@ -219,7 +219,7 @@ function renderMyItems(snapshot) {
     footerRight.appendChild(btnDelete);
     header.appendChild(footerRight);
 
-    // Body – show notes clearly
+    // Body – show owner's notes clearly
     const body = document.createElement("div");
     body.className = "item-body";
 
@@ -510,6 +510,7 @@ async function renderRecipientItems(snapshot) {
 
     const name = data.name || "(no name)";
     const link = data.link || "";
+    const ownerNotes = (data.notes || "").trim();
 
     const purchasedTag = purchased
       ? `<span class="tag tag-purchased">✔ Purchased</span>`
@@ -521,6 +522,17 @@ async function renderRecipientItems(snapshot) {
 
     const noteTextEscaped = escapeHtml(yourNote || "");
 
+    // Owner's (recipient's) notes shown to all givers
+    const ownerNotesHtml = ownerNotes
+      ? `
+        <div style="font-size:0.75rem;color:#9ca3af;margin-bottom:2px;">Their notes:</div>
+        <div style="font-size:0.8rem;color:#e5e7eb;white-space:pre-wrap;">
+          ${escapeHtml(ownerNotes)}
+        </div>
+      `
+      : "";
+
+    // Shared giver notes for *all* givers
     const giverNotesHtml = allGiverNotes.length
       ? `
         <div style="margin:4px 0 6px;">
@@ -549,10 +561,11 @@ async function renderRecipientItems(snapshot) {
           </div>
         </div>
         <div class="item-body">
+          ${ownerNotesHtml}
           ${
-            link
-              ? ""
-              : "<span style='font-size:0.75rem;color:#9ca3af;'>No link provided</span>"
+            !link && !ownerNotes
+              ? "<span style='font-size:0.75rem;color:#9ca3af;'>No link provided</span>"
+              : ""
           }
         </div>
         <div class="item-footer">
@@ -670,7 +683,7 @@ otherItemsList.addEventListener("click", async (e) => {
         },
         { merge: true }
       );
-      // The UI will refresh automatically via onSnapshot
+      // UI refreshes via onSnapshot
     } catch (err) {
       console.error("Error saving giver note:", err);
       alert("Failed to save note.");
