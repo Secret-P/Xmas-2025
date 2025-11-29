@@ -19,6 +19,14 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
+// ---------- Small helper ----------
+function escapeHtml(str = "") {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 // ---------- DOM ----------
 const tabMyList = document.getElementById("tab-my-list");
 const tabFamily = document.getElementById("tab-family");
@@ -224,7 +232,7 @@ function renderMyItems(snapshot) {
       label.textContent = "Your notes:";
 
       const notesText = document.createElement("div");
-      notesText.style.whiteSpace = "pre-wrap"; // handle multi-line notes
+      notesText.style.whiteSpace = "pre-wrap";
       notesText.style.fontSize = "0.8rem";
       notesText.style.color = "#e5e7eb";
       notesText.textContent = notes;
@@ -479,6 +487,7 @@ async function renderRecipientItems(snapshot) {
     // Load giverData for this item
     let purchased = false;
     let yourNote = "";
+    const allGiverNotes = [];
 
     try {
       const giverRef = collection(db, "items", itemId, "giverData");
@@ -487,6 +496,9 @@ async function renderRecipientItems(snapshot) {
         const g = gDoc.data();
         if (g.purchased) {
           purchased = true;
+        }
+        if (g.note && typeof g.note === "string" && g.note.trim() !== "") {
+          allGiverNotes.push(g.note.trim());
         }
         if (gDoc.id === currentUser?.uid && g.note) {
           yourNote = g.note;
@@ -507,17 +519,31 @@ async function renderRecipientItems(snapshot) {
       ? `<a href="${link}" target="_blank" rel="noopener noreferrer" class="link">Open link ↗</a>`
       : "";
 
-    const noteTextEscaped = (yourNote || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    const noteTextEscaped = escapeHtml(yourNote || "");
+
+    const giverNotesHtml = allGiverNotes.length
+      ? `
+        <div style="margin:4px 0 6px;">
+          <div style="font-size:0.75rem;color:#9ca3af;margin-bottom:2px;">Giver notes:</div>
+          <ul style="margin:0;padding-left:16px;font-size:0.78rem;color:#e5e7eb;">
+            ${allGiverNotes
+              .map((n) => `<li>${escapeHtml(n)}</li>`)
+              .join("")}
+          </ul>
+        </div>
+      `
+      : `
+        <div style="margin:4px 0 6px;font-size:0.75rem;color:#9ca3af;">
+          No giver notes yet.
+        </div>
+      `;
 
     const cardClass = purchased ? "item-card purchased" : "item-card";
 
     const cardHtml = `
       <div class="${cardClass}" data-item-id="${itemId}">
         <div class="item-header">
-          <div class="item-title">${name}</div>
+          <div class="item-title">${escapeHtml(name)}</div>
           <div class="item-tags">
             ${purchasedTag}
           </div>
@@ -542,6 +568,7 @@ async function renderRecipientItems(snapshot) {
           </div>
         </div>
         <div style="margin-top:6px;">
+          ${giverNotesHtml}
           <div class="form-group">
             <label style="font-size:0.75rem;color:#9ca3af;">Your giver note</label>
             <textarea class="textarea giver-note-input"
@@ -550,7 +577,7 @@ async function renderRecipientItems(snapshot) {
           </div>
           <div class="row-between">
             <span class="helper-text" style="font-size:0.7rem;">
-              The recipient never sees this. Other givers can still see the item is purchased.
+              The recipient never sees this. Other givers can still see the item is purchased and all giver notes.
             </span>
             <button class="btn btn-primary btn-small btn-save-note"
                     data-item-id="${itemId}">
@@ -643,6 +670,7 @@ otherItemsList.addEventListener("click", async (e) => {
         },
         { merge: true }
       );
+      // The UI will refresh automatically via onSnapshot
     } catch (err) {
       console.error("Error saving giver note:", err);
       alert("Failed to save note.");
