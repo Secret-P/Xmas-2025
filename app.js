@@ -57,6 +57,10 @@ const otherItemsList = document.getElementById("other-items-list");
 const otherItemsEmpty = document.getElementById("other-items-empty");
 const btnAddOtherItem = document.getElementById("btn-add-other-item");
 
+// New filter/sort controls
+const filterPurchasedModeSelect = document.getElementById("filter-purchased-mode");
+const sortUnpurchasedFirstCheckbox = document.getElementById("sort-unpurchased-first");
+
 // ---------- State ----------
 let currentUser = null;
 
@@ -66,6 +70,13 @@ let unsubscribeRecipientItems = null;
 
 let currentRecipientId = null;
 let usersMap = new Map(); // uid -> {displayName, email}
+
+// items for the currently selected recipient (raw data from Firestore)
+let currentRecipientItems = [];
+
+// Filter/sort state
+let purchasedFilterMode = "all"; // "all" | "unpurchased" | "purchased"
+let sortUnpurchasedFirst = true;
 
 // ---------- Tabs ----------
 function setActiveTab(tab) {
@@ -84,6 +95,21 @@ function setActiveTab(tab) {
 
 tabMyList.addEventListener("click", () => setActiveTab("my-list"));
 tabFamily.addEventListener("click", () => setActiveTab("family"));
+
+// Filter/sort control handlers
+if (filterPurchasedModeSelect) {
+  filterPurchasedModeSelect.addEventListener("change", (e) => {
+    purchasedFilterMode = e.target.value || "all";
+    renderRecipientItemsFromState();
+  });
+}
+
+if (sortUnpurchasedFirstCheckbox) {
+  sortUnpurchasedFirstCheckbox.addEventListener("change", (e) => {
+    sortUnpurchasedFirst = e.target.checked;
+    renderRecipientItemsFromState();
+  });
+}
 
 // ---------- Auth-driven listeners ----------
 onAuthStateChanged(auth, (user) => {
@@ -124,6 +150,7 @@ function clearUI() {
   selectedRecipientEmail.textContent = "";
   otherItemRecipientId.value = "";
   currentRecipientId = null;
+  currentRecipientItems = [];
 
   if (btnAddOtherItem) {
     btnAddOtherItem.disabled = true;
@@ -151,7 +178,6 @@ function initMyListListener() {
   unsubscribeMyItems = onSnapshot(
     qMy,
     (snapshot) => {
-      console.log("My items docs:", snapshot.size);
       renderMyItems(snapshot);
     },
     (err) => {
@@ -460,7 +486,7 @@ function initRecipientItemsListener(uid) {
   unsubscribeRecipientItems = onSnapshot(
     qRecipient,
     async (snapshot) => {
-      await renderRecipientItems(snapshot);
+      await updateRecipientItemsFromSnapshot(snapshot);
     },
     (err) => {
       console.error("Recipient items listener error:", err);
@@ -468,23 +494,20 @@ function initRecipientItemsListener(uid) {
   );
 }
 
-async function renderRecipientItems(snapshot) {
-  otherItemsList.innerHTML = "";
+// Fill currentRecipientItems from snapshot, then render using state (filter + sort)
+async function updateRecipientItemsFromSnapshot(snapshot) {
+  currentRecipientItems = [];
 
   if (snapshot.empty) {
-    otherItemsEmpty.classList.remove("hidden");
+    currentRecipientItems = [];
+    renderRecipientItemsFromState();
     return;
   }
-
-  otherItemsEmpty.classList.add("hidden");
-
-  const cards = [];
 
   for (const docSnap of snapshot.docs) {
     const data = docSnap.data();
     const itemId = docSnap.id;
 
-    // Load giverData for this item
     let purchased = false;
     let yourNote = "";
     const allGiverNotes = [];
@@ -508,16 +531,69 @@ async function renderRecipientItems(snapshot) {
       console.error("Error loading giverData for item", itemId, err);
     }
 
+    currentRecipientItems.push({
+      itemId,
+      data,
+      purchased,
+      ownerNotes: (data.notes || "").trim(),
+      allGiverNotes,
+      yourNote
+    });
+  }
+
+  renderRecipientItemsFromState();
+}
+
+// Renders using currentRecipientItems + filter/sort state
+function renderRecipientItemsFromState() {
+  otherItemsList.innerHTML = "";
+
+  if (!currentRecipientItems || currentRecipientItems.length === 0) {
+    otherItemsEmpty.classList.remove("hidden");
+    return;
+  }
+
+  // Start from full list
+  let items = [...currentRecipientItems];
+
+  // Apply filter mode
+  if (purchasedFilterMode === "unpurchased") {
+    items = items.filter((i) => !i.purchased);
+  } else if (purchasedFilterMode === "purchased") {
+    items = items.filter((i) => i.purchased);
+  }
+
+  // Sorting
+  if (sortUnpurchasedFirst) {
+    items.sort((a, b) => {
+      // false (0) before true (1)
+      return Number(a.purchased) - Number(b.purchased);
+    });
+  }
+
+  if (items.length === 0) {
+    otherItemsEmpty.classList.remove("hidden");
+    otherItemsEmpty.textContent = "No items match the current filter.";
+    return;
+  } else {
+    otherItemsEmpty.classList.add("hidden");
+    otherItemsEmpty.textContent = "No items on this list yet.";
+  }
+
+  const cards = [];
+
+  for (const item of items) {
+    const { itemId, data, purchased, ownerNotes, allGiverNotes, yourNote } = item;
+
     const name = data.name || "(no name)";
     const link = data.link || "";
-    const ownerNotes = (data.notes || "").trim();
 
     const purchasedTag = purchased
       ? `<span class="tag tag-purchased">✔ Purchased</span>`
       : "";
 
     const linkHtml = link
-      ? `<a href="${link}" target="_blank" rel="noopener noreferrer" class="link">Open link ↗</a>`
+      ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="link">Open link ↗</a>`
       : "";
 
     const noteTextEscaped = escapeHtml(yourNote || "");
@@ -631,29 +707,12 @@ otherItemsList.addEventListener("click", async (e) => {
         { merge: true }
       );
 
-      // Optimistic UI update
-      btnPurchased.dataset.purchased = String(next);
-      btnPurchased.textContent = next ? "Unmark purchased" : "Mark purchased";
-
-      const card = btnPurchased.closest(".item-card");
-      if (card) {
-        card.classList.toggle("purchased", next);
-
-        const tagContainer = card.querySelector(".item-tags");
-        if (tagContainer) {
-          let pill = tagContainer.querySelector(".tag-purchased");
-          if (next) {
-            if (!pill) {
-              pill = document.createElement("span");
-              pill.className = "tag tag-purchased";
-              pill.textContent = "✔ Purchased";
-              tagContainer.appendChild(pill);
-            }
-          } else if (pill) {
-            pill.remove();
-          }
-        }
+      // Optimistic UI tweak: update local state so filter/sort re-render is correct
+      const idx = currentRecipientItems.findIndex((i) => i.itemId === itemId);
+      if (idx !== -1) {
+        currentRecipientItems[idx].purchased = next;
       }
+      renderRecipientItemsFromState();
     } catch (err) {
       console.error("Error updating purchased state:", err);
       alert("Failed to update purchased state.");
@@ -683,7 +742,30 @@ otherItemsList.addEventListener("click", async (e) => {
         },
         { merge: true }
       );
-      // UI refreshes via onSnapshot
+
+      // Update local state + re-render so shared giver notes list updates
+      const idx = currentRecipientItems.findIndex((i) => i.itemId === itemId);
+      if (idx !== -1) {
+        currentRecipientItems[idx].yourNote = noteText;
+
+        // Also update allGiverNotes cache so your note shows in the list
+        const cleanNote = noteText.trim();
+        const arr = currentRecipientItems[idx].allGiverNotes || [];
+        const existingIndex = arr.findIndex(
+          (n) => n.trim() === currentRecipientItems[idx].yourNote?.trim()
+        );
+
+        // For simplicity, if note is non-empty, ensure it's in the list
+        if (cleanNote) {
+          if (!arr.includes(cleanNote)) {
+            arr.push(cleanNote);
+          }
+        }
+
+        currentRecipientItems[idx].allGiverNotes = arr;
+      }
+
+      renderRecipientItemsFromState();
     } catch (err) {
       console.error("Error saving giver note:", err);
       alert("Failed to save note.");
