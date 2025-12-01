@@ -27,6 +27,32 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;");
 }
 
+// ---------- Toast ----------
+const toastEl = document.getElementById("toast");
+let toastTimeout = null;
+
+function showToast(message) {
+  if (!toastEl) return;
+  toastEl.textContent = message;
+
+  toastEl.classList.remove("hidden");
+  // Force reflow so transition always plays
+  // eslint-disable-next-line no-unused-expressions
+  toastEl.offsetHeight;
+  toastEl.classList.add("toast-visible");
+
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+  }
+
+  toastTimeout = setTimeout(() => {
+    toastEl.classList.remove("toast-visible");
+    setTimeout(() => {
+      toastEl.classList.add("hidden");
+    }, 180);
+  }, 2200);
+}
+
 // ---------- DOM ----------
 const tabMyList = document.getElementById("tab-my-list");
 const tabFamily = document.getElementById("tab-family");
@@ -324,6 +350,7 @@ myItemForm.addEventListener("submit", async (e) => {
         notes: notes || "",
         updatedAt: serverTimestamp()
       });
+      showToast("Item updated");
     } else {
       const itemsRef = collection(db, "items");
       await addDoc(itemsRef, {
@@ -335,6 +362,7 @@ myItemForm.addEventListener("submit", async (e) => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      showToast("Item added");
     }
 
     resetMyItemForm();
@@ -713,6 +741,9 @@ otherItemsList.addEventListener("click", async (e) => {
         currentRecipientItems[idx].purchased = next;
       }
       renderRecipientItemsFromState();
+
+      // Toast
+      showToast(next ? "Marked as purchased" : "Marked as not purchased");
     } catch (err) {
       console.error("Error updating purchased state:", err);
       alert("Failed to update purchased state.");
@@ -748,24 +779,18 @@ otherItemsList.addEventListener("click", async (e) => {
       if (idx !== -1) {
         currentRecipientItems[idx].yourNote = noteText;
 
-        // Also update allGiverNotes cache so your note shows in the list
         const cleanNote = noteText.trim();
         const arr = currentRecipientItems[idx].allGiverNotes || [];
-        const existingIndex = arr.findIndex(
-          (n) => n.trim() === currentRecipientItems[idx].yourNote?.trim()
-        );
 
-        // For simplicity, if note is non-empty, ensure it's in the list
-        if (cleanNote) {
-          if (!arr.includes(cleanNote)) {
-            arr.push(cleanNote);
-          }
+        if (cleanNote && !arr.includes(cleanNote)) {
+          arr.push(cleanNote);
         }
 
         currentRecipientItems[idx].allGiverNotes = arr;
       }
 
       renderRecipientItemsFromState();
+      showToast("Note saved");
     } catch (err) {
       console.error("Error saving giver note:", err);
       alert("Failed to save note.");
@@ -823,6 +848,8 @@ otherItemForm.addEventListener("submit", async (e) => {
     otherItemNameInput.value = "";
     otherItemLinkInput.value = "";
     otherItemNoteInput.value = "";
+
+    showToast("Item added to their list");
   } catch (err) {
     console.error("Error adding item for other recipient:", err);
     alert("Failed to add item.");
