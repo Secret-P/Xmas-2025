@@ -1,83 +1,152 @@
 // auth.js
-import { auth, db, provider } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import {
+  GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 import {
   doc,
-  setDoc
+  getDoc,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
+// ---------- DOM ELEMENTS ----------
 const authScreen = document.getElementById("auth-screen");
 const appShell = document.getElementById("app-shell");
-const btnLogin = document.getElementById("btn-google-login");
+
+const btnGoogleLogin = document.getElementById("btn-google-login");
 const btnLogout = document.getElementById("btn-logout");
 
-const userDisplayName = document.getElementById("user-display-name");
-const userEmail = document.getElementById("user-email");
 const userAvatar = document.getElementById("user-avatar");
-const myListOwnerLabel = document.getElementById("my-list-owner-label");
+const userDisplayNameEl = document.getElementById("user-display-name");
+const userEmailEl = document.getElementById("user-email");
 
-btnLogin.addEventListener("click", async () => {
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    console.error("Sign-in error:", err);
-    alert("Sign-in failed. Check console for details.");
+// ---------- HELPERS ----------
+function showAuthScreen() {
+  if (authScreen) authScreen.style.display = "flex";
+  if (appShell) appShell.style.display = "none";
+}
+
+function showAppShell() {
+  if (authScreen) authScreen.style.display = "none";
+  if (appShell) appShell.style.display = "flex";
+}
+
+function setUserChip(user) {
+  if (!user) {
+    if (userAvatar) userAvatar.textContent = "";
+    if (userDisplayNameEl) userDisplayNameEl.textContent = "Signed out";
+    if (userEmailEl) userEmailEl.textContent = "";
+    return;
   }
-});
 
-btnLogout.addEventListener("click", async () => {
-  try {
-    await signOut(auth);
-  } catch (err) {
-    console.error("Sign-out error:", err);
-  }
-});
+  const name = user.displayName || "(No name)";
+  const email = user.email || "";
+  const photoURL = user.photoURL || "";
 
-function setAvatar(user) {
-  userAvatar.innerHTML = "";
-  if (user.photoURL) {
-    const img = document.createElement("img");
-    img.src = user.photoURL;
-    img.alt = user.displayName || "User";
-    userAvatar.appendChild(img);
-  } else {
-    const span = document.createElement("span");
-    span.textContent = (user.displayName || user.email || "?")[0].toUpperCase();
-    userAvatar.appendChild(span);
+  if (userDisplayNameEl) userDisplayNameEl.textContent = name;
+  if (userEmailEl) userEmailEl.textContent = email;
+
+  if (userAvatar) {
+    userAvatar.innerHTML = ""; // clear
+
+    if (photoURL) {
+      const img = document.createElement("img");
+      img.src = photoURL;
+      img.alt = name;
+      userAvatar.appendChild(img);
+    } else {
+      // Fallback to initial
+      const initial = name.trim().charAt(0).toUpperCase() || "?";
+      userAvatar.textContent = initial;
+    }
   }
 }
 
-async function ensureUserDoc(user) {
-  const ref = doc(db, "users", user.uid);
-  await setDoc(
-    ref,
-    {
-      displayName: user.displayName || "",
-      email: user.email || "",
-      photoURL: user.photoURL || ""
-    },
-    { merge: true }
-  );
+// ---------- LOGIN / LOGOUT ----------
+if (btnGoogleLogin) {
+  btnGoogleLogin.addEventListener("click", async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle the rest
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      alert("Sign-in failed. Please try again.");
+    }
+  });
 }
 
+if (btnLogout) {
+  btnLogout.addEventListener("click", async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Sign-out error:", err);
+      alert("Sign-out failed. Please try again.");
+    }
+  });
+}
+
+// ---------- AUTH STATE ----------
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    authScreen.style.display = "none";
-    appShell.style.display = "flex";
+  if (!user) {
+    // Signed out
+    setUserChip(null);
+    showAuthScreen();
+    return;
+  }
 
-    userDisplayName.textContent = user.displayName || "Anonymous";
-    userEmail.textContent = user.email || "";
-    myListOwnerLabel.textContent = "You";
+  // Check if this user is "registered" (has a /users/{uid} doc)
+  const userDocRef = doc(db, "users", user.uid);
 
-    setAvatar(user);
-    await ensureUserDoc(user);
-  } else {
-    authScreen.style.display = "flex";
-    appShell.style.display = "none";
+  let isRegistered = false;
+
+  try {
+    const snap = await getDoc(userDocRef);
+    // If they don't have permission to read OR doc doesn't exist,
+    // this will either throw or snap.exists() will be false (for existing family, it's true).
+    if (snap.exists()) {
+      isRegistered = true;
+    }
+  } catch (err) {
+    console.warn("Error checking user registration:", err);
+    isRegistered = false;
+  }
+
+  if (!isRegistered) {
+    // Not in the /users collection under current rules → not a family member
+    alert("This app is currently limited to registered family members.");
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Error signing out unregistered user:", err);
+    }
+    return;
+  }
+
+  // At this point, Firestore rules consider them a registered user.
+  // Safe to show the app.
+  showAppShell();
+  setUserChip(user);
+
+  // Update profile fields in /users/{uid} (allowed by your rules as update)
+  try {
+    await setDoc(
+      userDocRef,
+      {
+        displayName: user.displayName || "",
+        email: user.email || "",
+        photoURL: user.photoURL || "",
+        lastLoginAt: new Date().toISOString(),
+      },
+      { merge: true } // update-only; rules prevent new users from creating this
+    );
+  } catch (err) {
+    console.error("Error updating user profile doc:", err);
+    // Not fatal for app usage, so we don't block them here
   }
 });
