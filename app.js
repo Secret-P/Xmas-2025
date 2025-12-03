@@ -27,6 +27,16 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;");
 }
 
+function getInitials(name = "") {
+  const trimmed = name.trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 // ---------- Toast ----------
 const toastEl = document.getElementById("toast");
 let toastTimeout = null;
@@ -70,6 +80,7 @@ const myItemsList = document.getElementById("my-items-list");
 const myItemsEmpty = document.getElementById("my-items-empty");
 
 const familyList = document.getElementById("family-list");
+const recipientContext = document.getElementById("recipient-context");
 const selectedRecipientName = document.getElementById("selected-recipient-name");
 const selectedRecipientEmail = document.getElementById("selected-recipient-email");
 
@@ -172,6 +183,7 @@ function clearUI() {
   familyList.innerHTML = "";
   otherItemsList.innerHTML = "";
   otherItemsEmpty.classList.remove("hidden");
+  if (recipientContext) recipientContext.textContent = "Viewing someone's list";
   selectedRecipientName.textContent = "Choose someone";
   selectedRecipientEmail.textContent = "";
   otherItemRecipientId.value = "";
@@ -482,6 +494,9 @@ function selectRecipient(uid) {
   const user = usersMap.get(uid);
   selectedRecipientName.textContent = user.displayName;
   selectedRecipientEmail.textContent = user.email;
+  if (recipientContext) {
+    recipientContext.textContent = `Viewing ${user.displayName}'s list`;
+  }
   otherItemRecipientId.value = uid;
 
   if (btnAddOtherItem) {
@@ -537,6 +552,7 @@ async function updateRecipientItemsFromSnapshot(snapshot) {
     const itemId = docSnap.id;
 
     let purchased = false;
+    let purchasedById = null;
     let yourNote = "";
     const allGiverNotes = [];
 
@@ -547,6 +563,9 @@ async function updateRecipientItemsFromSnapshot(snapshot) {
         const g = gDoc.data();
         if (g.purchased) {
           purchased = true;
+          if (!purchasedById || gDoc.id === currentUser?.uid) {
+            purchasedById = gDoc.id;
+          }
         }
         if (g.note && typeof g.note === "string" && g.note.trim() !== "") {
           allGiverNotes.push(g.note.trim());
@@ -563,6 +582,7 @@ async function updateRecipientItemsFromSnapshot(snapshot) {
       itemId,
       data,
       purchased,
+      purchasedById,
       ownerNotes: (data.notes || "").trim(),
       allGiverNotes,
       yourNote
@@ -611,13 +631,31 @@ function renderRecipientItemsFromState() {
   const cards = [];
 
   for (const item of items) {
-    const { itemId, data, purchased, ownerNotes, allGiverNotes, yourNote } = item;
+    const {
+      itemId,
+      data,
+      purchased,
+      purchasedById,
+      ownerNotes,
+      allGiverNotes,
+      yourNote
+    } = item;
 
     const name = data.name || "(no name)";
     const link = data.link || "";
 
     const purchasedTag = purchased
       ? `<span class="tag tag-purchased">✔ Purchased</span>`
+      : "";
+
+    const purchaserUser = purchasedById ? usersMap.get(purchasedById) : null;
+    const purchaserInitials = purchaserUser
+      ? getInitials(purchaserUser.displayName || purchaserUser.email || "")
+      : null;
+    const purchaserPill = purchaserInitials && purchased
+      ? `<span class="purchase-pill" title="Purchased by ${escapeHtml(
+          purchaserUser?.displayName || purchaserInitials
+        )}"><span class="pill-initials">${purchaserInitials}</span> Purchased</span>`
       : "";
 
     const linkHtml = link
@@ -662,6 +700,7 @@ function renderRecipientItemsFromState() {
           <div class="item-title">${escapeHtml(name)}</div>
           <div class="item-tags">
             ${purchasedTag}
+            ${purchaserPill}
           </div>
         </div>
         <div class="item-body">
@@ -739,6 +778,7 @@ otherItemsList.addEventListener("click", async (e) => {
       const idx = currentRecipientItems.findIndex((i) => i.itemId === itemId);
       if (idx !== -1) {
         currentRecipientItems[idx].purchased = next;
+        currentRecipientItems[idx].purchasedById = next ? currentUser.uid : null;
       }
       renderRecipientItemsFromState();
 
