@@ -505,15 +505,6 @@
 
       .purchase-pill {
         display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 999px;
-        padding: 2px 8px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        background: linear-gradient(120deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.28));
-        border: 1px solid rgba(34, 197, 94, 0.5);
-        color: #bbf7d0;
       }
 
       .pill-initials {
@@ -553,6 +544,17 @@
         display: flex;
         align-items: center;
         gap: 4px;
+      }
+
+      .active-list-label {
+        display: none;
+        margin-top: 6px;
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid var(--border-subtle);
+        font-size: 0.9rem;
+        font-weight: 600;
       }
 
       .link {
@@ -747,6 +749,12 @@
           flex: 1;
           justify-content: center;
         }
+        .active-list-label {
+          display: block;
+        }
+        .recipient-header {
+          display: none;
+        }
       }
 
       /* Toast */
@@ -821,6 +829,8 @@
             <button id="tab-family" class="tab" type="button">Family Lists</button>
           </div>
         </div>
+
+        <div id="active-list-label" class="active-list-label">My List</div>
       </div>
 
       <!-- MY LIST PANEL -->

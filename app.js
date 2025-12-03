@@ -37,6 +37,12 @@ function getInitials(name = "") {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function getFirstName(name = "") {
+  const trimmed = name.trim();
+  if (!trimmed) return "";
+  return trimmed.split(/\s+/)[0];
+}
+
 // ---------- Toast ----------
 const toastEl = document.getElementById("toast");
 let toastTimeout = null;
@@ -83,6 +89,7 @@ const familyList = document.getElementById("family-list");
 const recipientContext = document.getElementById("recipient-context");
 const selectedRecipientName = document.getElementById("selected-recipient-name");
 const selectedRecipientEmail = document.getElementById("selected-recipient-email");
+const activeListLabel = document.getElementById("active-list-label");
 
 const otherItemForm = document.getElementById("other-item-form");
 const otherItemRecipientId = document.getElementById("other-item-recipient-id");
@@ -127,6 +134,29 @@ function setActiveTab(tab) {
     tabMyList.classList.remove("active");
     panelFamily.classList.remove("hidden");
     panelMyList.classList.add("hidden");
+  }
+
+  updateActiveListLabel();
+}
+
+function updateActiveListLabel() {
+  if (!activeListLabel) return;
+
+  if (tabMyList.classList.contains("active")) {
+    activeListLabel.textContent = "My List";
+    return;
+  }
+
+  if (tabFamily.classList.contains("active")) {
+    if (currentRecipientId && usersMap.has(currentRecipientId)) {
+      const recipient = usersMap.get(currentRecipientId);
+      const first = getFirstName(
+        recipient?.displayName || recipient?.email || "Family member"
+      );
+      activeListLabel.textContent = first ? `${first}'s List` : "Family Lists";
+    } else {
+      activeListLabel.textContent = "Family Lists";
+    }
   }
 }
 
@@ -197,6 +227,8 @@ function clearUI() {
   if (otherItemNameInput) otherItemNameInput.value = "";
   if (otherItemLinkInput) otherItemLinkInput.value = "";
   if (otherItemNoteInput) otherItemNoteInput.value = "";
+
+  updateActiveListLabel();
 }
 
 // ---------- My List ----------
@@ -508,6 +540,7 @@ function selectRecipient(uid) {
   if (otherItemNoteInput) otherItemNoteInput.value = "";
 
   initRecipientItemsListener(uid);
+  updateActiveListLabel();
 }
 
 // ---------- Recipient items (Family view) ----------
@@ -648,16 +681,6 @@ function renderRecipientItemsFromState() {
       ? `<span class="tag tag-purchased">✔ Purchased</span>`
       : "";
 
-    const purchaserUser = purchasedById ? usersMap.get(purchasedById) : null;
-    const purchaserInitials = purchaserUser
-      ? getInitials(purchaserUser.displayName || purchaserUser.email || "")
-      : null;
-    const purchaserPill = purchaserInitials && purchased
-      ? `<span class="purchase-pill" title="Purchased by ${escapeHtml(
-          purchaserUser?.displayName || purchaserInitials
-        )}"><span class="pill-initials">${purchaserInitials}</span> Purchased</span>`
-      : "";
-
     const linkHtml = link
       ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" class="link">Open link ↗</a>`
       : "";
@@ -700,7 +723,6 @@ function renderRecipientItemsFromState() {
           <div class="item-title">${escapeHtml(name)}</div>
           <div class="item-tags">
             ${purchasedTag}
-            ${purchaserPill}
           </div>
         </div>
         <div class="item-body">
