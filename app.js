@@ -43,6 +43,13 @@ function getFirstName(name = "") {
   return trimmed.split(/\s+/)[0];
 }
 
+function setRecipientLoading(next) {
+  isRecipientLoading = Boolean(next);
+  if (recipientLoading) {
+    recipientLoading.classList.toggle("hidden", !isRecipientLoading);
+  }
+}
+
 // ---------- Toast ----------
 const toastEl = document.getElementById("toast");
 let toastTimeout = null;
@@ -96,6 +103,7 @@ const otherItemRecipientId = document.getElementById("other-item-recipient-id");
 const otherItemNameInput = document.getElementById("other-item-name");
 const otherItemLinkInput = document.getElementById("other-item-link");
 const otherItemNoteInput = document.getElementById("other-item-note");
+const recipientLoading = document.getElementById("recipient-loading");
 
 const otherItemsList = document.getElementById("other-items-list");
 const otherItemsEmpty = document.getElementById("other-items-empty");
@@ -121,6 +129,7 @@ let currentRecipientItems = [];
 // Filter/sort state
 let purchasedFilterMode = "all"; // "all" | "unpurchased" | "purchased"
 let sortUnpurchasedFirst = true;
+let isRecipientLoading = false;
 
 // ---------- Tabs ----------
 function setActiveTab(tab) {
@@ -229,6 +238,7 @@ function clearUI() {
   if (otherItemNoteInput) otherItemNoteInput.value = "";
 
   updateActiveListLabel();
+  setRecipientLoading(false);
 }
 
 // ---------- My List ----------
@@ -539,6 +549,7 @@ function selectRecipient(uid) {
   if (otherItemLinkInput) otherItemLinkInput.value = "";
   if (otherItemNoteInput) otherItemNoteInput.value = "";
 
+  setRecipientLoading(true);
   initRecipientItemsListener(uid);
   updateActiveListLabel();
 }
@@ -572,57 +583,62 @@ function initRecipientItemsListener(uid) {
 
 // Fill currentRecipientItems from snapshot, then render using state (filter + sort)
 async function updateRecipientItemsFromSnapshot(snapshot) {
+  setRecipientLoading(true);
   currentRecipientItems = [];
 
-  if (snapshot.empty) {
-    currentRecipientItems = [];
-    renderRecipientItemsFromState();
-    return;
-  }
-
-  for (const docSnap of snapshot.docs) {
-    const data = docSnap.data();
-    const itemId = docSnap.id;
-
-    let purchased = false;
-    let purchasedById = null;
-    let yourNote = "";
-    const allGiverNotes = [];
-
-    try {
-      const giverRef = collection(db, "items", itemId, "giverData");
-      const giverSnap = await getDocs(giverRef);
-      giverSnap.forEach((gDoc) => {
-        const g = gDoc.data();
-        if (g.purchased) {
-          purchased = true;
-          if (!purchasedById || gDoc.id === currentUser?.uid) {
-            purchasedById = gDoc.id;
-          }
-        }
-        if (g.note && typeof g.note === "string" && g.note.trim() !== "") {
-          allGiverNotes.push(g.note.trim());
-        }
-        if (gDoc.id === currentUser?.uid && g.note) {
-          yourNote = g.note;
-        }
-      });
-    } catch (err) {
-      console.error("Error loading giverData for item", itemId, err);
+  try {
+    if (snapshot.empty) {
+      currentRecipientItems = [];
+      renderRecipientItemsFromState();
+      return;
     }
 
-    currentRecipientItems.push({
-      itemId,
-      data,
-      purchased,
-      purchasedById,
-      ownerNotes: (data.notes || "").trim(),
-      allGiverNotes,
-      yourNote
-    });
-  }
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const itemId = docSnap.id;
 
-  renderRecipientItemsFromState();
+      let purchased = false;
+      let purchasedById = null;
+      let yourNote = "";
+      const allGiverNotes = [];
+
+      try {
+        const giverRef = collection(db, "items", itemId, "giverData");
+        const giverSnap = await getDocs(giverRef);
+        giverSnap.forEach((gDoc) => {
+          const g = gDoc.data();
+          if (g.purchased) {
+            purchased = true;
+            if (!purchasedById || gDoc.id === currentUser?.uid) {
+              purchasedById = gDoc.id;
+            }
+          }
+          if (g.note && typeof g.note === "string" && g.note.trim() !== "") {
+            allGiverNotes.push(g.note.trim());
+          }
+          if (gDoc.id === currentUser?.uid && g.note) {
+            yourNote = g.note;
+          }
+        });
+      } catch (err) {
+        console.error("Error loading giverData for item", itemId, err);
+      }
+
+      currentRecipientItems.push({
+        itemId,
+        data,
+        purchased,
+        purchasedById,
+        ownerNotes: (data.notes || "").trim(),
+        allGiverNotes,
+        yourNote
+      });
+    }
+
+    renderRecipientItemsFromState();
+  } finally {
+    setRecipientLoading(false);
+  }
 }
 
 // Renders using currentRecipientItems + filter/sort state
@@ -664,7 +680,7 @@ function renderRecipientItemsFromState() {
   const cards = [];
 
   for (const item of items) {
-    const {
+    const { 
       itemId,
       data,
       purchased,
@@ -677,8 +693,29 @@ function renderRecipientItemsFromState() {
     const name = data.name || "(no name)";
     const link = data.link || "";
 
+    let purchaserLabel = "";
+    if (purchased && purchasedById) {
+      const purchaser = usersMap.get(purchasedById);
+      if (purchaser) {
+        purchaserLabel = purchaser.displayName || purchaser.email || "";
+      } else if (purchasedById === currentUser?.uid) {
+        purchaserLabel = currentUser.displayName || currentUser.email || "You";
+      }
+    }
+
+    if (purchased && !purchaserLabel) {
+      purchaserLabel = "Someone";
+    }
+
+    const purchaserInitials = purchaserLabel ? getInitials(purchaserLabel) : "";
+    const purchaserPill = purchaserInitials
+      ? `<span class="purchase-pill" title="Purchased by ${escapeHtml(
+          purchaserLabel
+        )}"><span class="pill-initials">${escapeHtml(purchaserInitials)}</span></span>`
+      : "";
+
     const purchasedTag = purchased
-      ? `<span class="tag tag-purchased">✔ Purchased</span>`
+      ? `<span class="tag tag-purchased purchase-tag">✔ Purchased ${purchaserPill}</span>`
       : "";
 
     const linkHtml = link
