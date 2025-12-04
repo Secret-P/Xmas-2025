@@ -125,6 +125,8 @@ let usersMap = new Map(); // uid -> {displayName, email}
 
 // items for the currently selected recipient (raw data from Firestore)
 let currentRecipientItems = [];
+// Track which recipient items are expanded in family view
+let expandedRecipientItems = new Set();
 
 // Filter/sort state
 let purchasedFilterMode = "all"; // "all" | "unpurchased" | "purchased"
@@ -528,6 +530,7 @@ function renderFamilyList() {
 function selectRecipient(uid) {
   if (!usersMap.has(uid)) return;
   currentRecipientId = uid;
+  expandedRecipientItems = new Set();
 
   Array.from(familyList.querySelectorAll(".family-member")).forEach((el) => {
     el.classList.toggle("active", el.dataset.uid === uid);
@@ -758,52 +761,60 @@ function renderRecipientItemsFromState() {
         </div>
       `;
 
-    const cardClass = purchased ? "item-card purchased" : "item-card";
+    const isExpanded = expandedRecipientItems.has(itemId);
+    const cardClass = `${purchased ? "item-card purchased" : "item-card"}${
+      isExpanded ? " expanded" : ""
+    }`;
 
     const cardHtml = `
       <div class="${cardClass}" data-item-id="${itemId}">
         <div class="item-header">
-          <div class="item-title">${escapeHtml(name)}</div>
+          <button class="item-toggle" data-item-id="${itemId}" aria-expanded="${isExpanded}">
+            <span class="item-chevron">${isExpanded ? "▾" : "▸"}</span>
+            <span class="item-title">${escapeHtml(name)}</span>
+          </button>
           <div class="item-tags">
             ${purchasedTag}
           </div>
         </div>
-        <div class="item-body">
-          ${ownerNotesHtml}
-          ${
-            !link && !ownerNotes
-              ? "<span style='font-size:0.75rem;color:#9ca3af;'>No link provided</span>"
-              : ""
-          }
-        </div>
-        <div class="item-footer">
-          <div class="item-footer-left">
-            ${linkHtml}
+        <div class="item-details ${isExpanded ? "" : "collapsed"}">
+          <div class="item-body">
+            ${ownerNotesHtml}
+            ${
+              !link && !ownerNotes
+                ? "<span style='font-size:0.75rem;color:#9ca3af;'>No link provided</span>"
+                : ""
+            }
           </div>
-          <div class="item-footer-right">
-            <button class="btn btn-outline btn-small btn-mark-purchased"
-                    data-item-id="${itemId}"
-                    data-purchased="${purchased}">
-              ${purchased ? "Unmark purchased" : "Mark purchased"}
-            </button>
-          </div>
-        </div>
-        <div style="margin-top:6px;">
-          ${giverNotesHtml}
-          <div class="form-group">
-            <label style="font-size:0.75rem;color:#9ca3af;">Your giver note</label>
-            <textarea class="textarea giver-note-input"
+          <div class="item-footer">
+            <div class="item-footer-left">
+              ${linkHtml}
+            </div>
+            <div class="item-footer-right">
+              <button class="btn btn-outline btn-small btn-mark-purchased"
                       data-item-id="${itemId}"
-                      placeholder="e.g. Already ordered, arrives 12/20.">${noteTextEscaped}</textarea>
+                      data-purchased="${purchased}">
+                ${purchased ? "Unmark purchased" : "Mark purchased"}
+              </button>
+            </div>
           </div>
-          <div class="row-between">
-            <span class="helper-text" style="font-size:0.7rem;">
-              The recipient never sees this. Other givers can still see the item is purchased and all giver notes.
-            </span>
-            <button class="btn btn-primary btn-small btn-save-note"
-                    data-item-id="${itemId}">
-              Save note
-            </button>
+          <div style="margin-top:6px;">
+            ${giverNotesHtml}
+            <div class="form-group">
+              <label style="font-size:0.75rem;color:#9ca3af;">Your giver note</label>
+              <textarea class="textarea giver-note-input"
+                        data-item-id="${itemId}"
+                        placeholder="e.g. Already ordered, arrives 12/20.">${noteTextEscaped}</textarea>
+            </div>
+            <div class="note-actions">
+              <button class="btn btn-primary btn-small btn-save-note" type="button"
+                      data-item-id="${itemId}">
+                Save note
+              </button>
+              <button class="info-icon" type="button"
+                      title="The recipient never sees this. Other givers can still see the item is purchased and all giver notes."
+                      aria-label="Note visibility info">ℹ</button>
+            </div>
           </div>
         </div>
       </div>
@@ -817,6 +828,21 @@ function renderRecipientItemsFromState() {
 
 // Event delegation for purchased + notes
 otherItemsList.addEventListener("click", async (e) => {
+  const toggle = e.target.closest(".item-toggle");
+  if (toggle) {
+    e.preventDefault();
+    const itemId = toggle.dataset.itemId;
+    if (itemId) {
+      if (expandedRecipientItems.has(itemId)) {
+        expandedRecipientItems.delete(itemId);
+      } else {
+        expandedRecipientItems.add(itemId);
+      }
+      renderRecipientItemsFromState();
+    }
+    return;
+  }
+
   const btnPurchased = e.target.closest(".btn-mark-purchased");
   if (btnPurchased) {
     e.preventDefault();
