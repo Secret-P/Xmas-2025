@@ -550,6 +550,9 @@ function selectRecipient(uid) {
   if (otherItemNoteInput) otherItemNoteInput.value = "";
 
   setRecipientLoading(true);
+  // Clear the prior recipient's items while the new list loads
+  currentRecipientItems = [];
+  renderRecipientItemsFromState();
   initRecipientItemsListener(uid);
   updateActiveListLabel();
 }
@@ -647,6 +650,9 @@ function renderRecipientItemsFromState() {
 
   if (!currentRecipientItems || currentRecipientItems.length === 0) {
     otherItemsEmpty.classList.remove("hidden");
+    otherItemsEmpty.textContent = isRecipientLoading
+      ? "Loading recipient's list..."
+      : "No items on this list yet.";
     return;
   }
 
