@@ -478,6 +478,29 @@
         gap: 6px;
       }
 
+      .item-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: none;
+        color: inherit;
+        padding: 2px 4px;
+        cursor: pointer;
+        flex: 1;
+        justify-content: flex-start;
+        text-align: left;
+      }
+
+      .item-toggle:hover .item-title {
+        color: var(--accent);
+      }
+
+      .item-chevron {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
       .item-title {
         font-size: 0.9rem;
         font-weight: 500;
@@ -577,12 +600,46 @@
         color: var(--text);
       }
 
+      .item-details.collapsed {
+        display: none;
+      }
+
       .item-footer {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 6px;
         margin-top: 2px;
+      }
+
+      .note-actions {
+        margin-top: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn-save-note {
+        white-space: nowrap;
+      }
+
+      .info-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid var(--border-subtle);
+        background: rgba(15, 23, 42, 0.8);
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .info-icon:hover {
+        border-color: var(--accent);
+        color: var(--accent);
       }
 
       .item-footer-left {
