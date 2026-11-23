@@ -1,5 +1,5 @@
 import { startAuth } from "./auth.js";
-import { watchMine, watchMembers, watchRecipient, saveWish, deleteWish, updateGiver } from "./data.js";
+import { watchMine, watchMembers, watchRecipient, saveWish, deleteWish, updateGiver } from "./data.js?v=86fc6bb";
 import { selectGifts } from "./family-list.js";
 import { giftRow, safeLink } from "./gift-row.js";
 
