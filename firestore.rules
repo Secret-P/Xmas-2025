@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function member() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    match /users/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || member());
+      allow list: if member();
+      allow update: if member() && uid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'email', 'photoURL', 'lastLoginAt']);
+      // Membership creation and removal are reserved for trusted administration.
+    }
+
+    match /items/{itemId} {
+      allow read: if member() &&
+        (resource.data.ownerId != request.auth.uid || resource.data.createdBy == request.auth.uid);
+      allow create: if member() && request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.ownerId is string &&
+        exists(/databases/$(database)/documents/users/$(request.resource.data.ownerId)) &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 &&
+        request.resource.data.keys().hasOnly(['ownerId','createdBy','name','link','notes','createdAt','updatedAt']);
+      allow update: if member() && resource.data.createdBy == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','link','notes','updatedAt']) &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0;
+      allow delete: if member() && resource.data.createdBy == request.auth.uid;
+
+      match /giverData/{giverId} {
+        function gift() {
+          return /databases/$(database)/documents/items/$(itemId);
+        }
+        function ownCoordination() {
+          let data = request.resource.data;
+          return member() && giverId == request.auth.uid && data.giverId == giverId &&
+            data.ownerId != request.auth.uid && getAfter(gift()).data.ownerId == data.ownerId &&
+            data.get('note', '') is string && data.get('purchased', false) is bool;
+        }
+        allow read: if member() && get(gift()).data.ownerId != request.auth.uid;
+        allow create: if ownCoordination() &&
+          request.resource.data.keys().hasOnly(['ownerId','giverId','purchased','note','updatedAt']);
+        allow update: if ownCoordination() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerId','giverId','purchased','note','updatedAt']);
+      }
+    }
+  }
+}

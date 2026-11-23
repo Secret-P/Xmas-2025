@@ -1,0 +1,30 @@
+name: Firestore rules tests
+on:
+  pull_request:
+    paths:
+      - firestore.rules
+      - tests/firestore-emulator.mjs
+      - .github/workflows/firestore-rules.yml
+permissions:
+  contents: read
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run with an isolated demo project
+        shell: bash
+        run: |
+          cd "$(mktemp -d)"
+          cp "$GITHUB_WORKSPACE/firestore.rules" "$GITHUB_WORKSPACE/tests/firestore-emulator.mjs" .
+          npm install --no-save --no-audit --no-fund firebase@11.0.0 @firebase/rules-unit-testing@4.0.1 firebase-tools@14.16.0
+          echo '{"firestore":{"rules":"firestore.rules"},"emulators":{"firestore":{"port":8080},"ui":{"enabled":false}}}' > firebase.json
+          ./node_modules/.bin/firebase emulators:exec --only firestore --project demo-family-wishes "node firestore-emulator.mjs"
