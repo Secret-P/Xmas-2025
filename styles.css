@@ -93,3 +93,44 @@ form .actions { justify-content: flex-end; }
   .list-heading { min-height: 5.5rem; }
   .coordination { max-width: 36rem; }
 }
+
+/* Woven holiday plaid and warm stationery for the family list. */
+:root {
+  --ground: #f3eadd; --paper: #fff9ed; --ink: #332e25;
+  --muted: #655c4e; --line: #d9c9af; --berry: #893b36;
+}
+body {
+  background-color: var(--ground);
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, #947b5010 3px 4px);
+}
+.masthead, .ribbon {
+  background-color: #284638;
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0 28px, #bd8e574a 28px 30px, transparent 30px 36px, #742f30a3 36px 48px, transparent 48px 78px),
+    repeating-linear-gradient(0deg, transparent 0 28px, #d0ad713b 28px 30px, transparent 30px 36px, #722f3091 36px 48px, transparent 48px 78px),
+    repeating-linear-gradient(135deg, transparent 0 2px, #ffffff0c 2px 3px);
+}
+.masthead {
+  margin-top: 1.15rem; padding: 1rem clamp(.75rem, 3vw, 1.7rem);
+  color: #fff8e6; border: 1px solid #274033; border-bottom: 4px double #c6a473;
+}
+.brand { font-family: Georgia, serif; font-style: italic; font-size: clamp(1.05rem, 3vw, 1.7rem); }
+.brand img { outline: 1px solid #d9ba87; outline-offset: 2px; margin-right: .25rem; }
+.account, .account button { color: #fff8e6; }
+.account button:hover { background: #203e32; }
+.masthead :focus-visible { outline-color: #ffe1a2; }
+nav { border-bottom: 1px solid #d3bea1; }
+.list-heading h1 { color: #65332d; font-style: italic; }
+.paper, .invite, dialog { background-color: var(--paper); }
+.paper {
+  border-top: 3px double #b7986f;
+  box-shadow: 0 3px 0 -1px #e8dbc4, 0 5px 0 -2px #c6af8d, 0 8px 18px #503a1d0d;
+}
+.gift, .gift:last-child { border-color: #d5c1a1; border-style: dashed; border-width: 1px 0 0; }
+.gift:last-child { border-bottom-width: 1px; }
+.coordination { border-color: #ae7957; background: #f4ead9; padding: .8rem 1rem; }
+button.primary { background: #813f36; border-color: #71372f; }
+button.primary:hover { background: #68322c; }
+@media (max-width:580px) {
+  .masthead { margin-top: .55rem; padding-block: .45rem; }
+}
