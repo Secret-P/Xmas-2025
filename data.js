@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot, doc, setDoc, addDoc, updateDoc,
 import { watchFamilyList } from "./family-list.js";
 
 const items = collection(db, "items");
+const seasonStart = Date.parse("2026-11-23T16:07:00-06:00");
 
 function listen(ref, receive, failed) {
   return onSnapshot(ref, { includeMetadataChanges: true }, snap => {
@@ -18,7 +19,8 @@ function watchItems(uid, ownOnly, receive, failed) {
   if (ownOnly) constraints.push(where("createdBy", "==", uid));
   return listen(query(items, ...constraints), rows => {
     const time = row => row.createdAt?.toMillis?.() ?? 0;
-    receive(rows.sort((a, b) => time(b) - time(a) || a.id.localeCompare(b.id)));
+    const current = rows.filter(row => time(row) >= seasonStart);
+    receive(current.sort((a, b) => time(b) - time(a) || a.id.localeCompare(b.id)));
   }, failed);
 }
 
